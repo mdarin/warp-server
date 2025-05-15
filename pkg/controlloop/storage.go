@@ -1,8 +1,10 @@
 package controlloop
 
 import (
+	"k8s.io/client-go/util/workqueue"
 	"reflect"
 	"sync"
+	"time"
 	"warp-server/pkg/assertions"
 )
 
@@ -43,7 +45,16 @@ type Storage[T ResourceObject[T]] interface {
 	getLast() (T, bool, error)
 }
 
-func NewMemoryStorage[T ResourceObject[T]](q *Queue[T]) *MemoryStorage[T] {
+func NewMemoryStorage[T ResourceObject[T]](opts ...StorageOption) *MemoryStorage[T] {
+	currentsOptions := &storageOpts{}
+	for _, o := range opts {
+		o(currentsOptions)
+	}
+	rateLimiter := workqueue.DefaultTypedControllerRateLimiter[ObjectKey]()
+	if currentsOptions.rateLimits != nil {
+		rateLimiter = workqueue.NewTypedItemExponentialFailureRateLimiter[ObjectKey](currentsOptions.rateLimits.Min, currentsOptions.rateLimits.Max)
+	}
+	q := NewQueue[T](rateLimiter)
 	return &MemoryStorage[T]{
 		m:       &sync.RWMutex{},
 		Queue:   q,
@@ -122,4 +133,24 @@ func (s *MemoryStorage[T]) getLast() (T, bool, error) {
 		return zero, false, KeyNotExist
 	}
 	return s.objects[name].DeepCopy(), false, nil
+}
+
+type storageOpts struct {
+	rateLimits *storageRateLimits
+}
+
+type storageRateLimits struct {
+	Min time.Duration
+	Max time.Duration
+}
+
+type StorageOption func(*storageOpts)
+
+func WithCustomRateLimits(min, max time.Duration) StorageOption {
+	return func(o *storageOpts) {
+		o.rateLimits = &storageRateLimits{
+			Min: min,
+			Max: max,
+		}
+	}
 }

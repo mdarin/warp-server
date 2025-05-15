@@ -19,7 +19,7 @@ func (s *Service) StartTunnel() error {
 		log.Info().Msg("Main", "Starting tunnel success!")
 	}
 
-	ok, err = s.sshTunnelRepository.CheckHealth()
+	ok, err = s.sshTunnelRepository.CheckHealthTCP()
 	if err != nil {
 		return fmt.Errorf("cannot check health %s", err)
 	}

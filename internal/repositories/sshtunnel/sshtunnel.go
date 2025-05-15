@@ -149,7 +149,7 @@ func (r *Repository) CheckHealthTCP() (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	conn, err := dialer.(proxy.ContextDialer).DialContext(ctx, "tcp", "8.8.8.8:53")
+	conn, err := dialer.(proxy.ContextDialer).DialContext(ctx, "tcp", r.tunnelAddress)
 	if err != nil {
 		return false, nil
 	}

@@ -68,8 +68,10 @@ func main() {
 		tunnelService,
 	)
 
-	mainLoop, _ := cl.New[*api.MainConfig](mainController, cl.WithLogger(log.NewLogger()))
-	mainLoop.Storage.Add(mc)
+	memoryStorage := cl.NewMemoryStorage[*api.MainConfig](cl.WithCustomRateLimits(time.Second*3, time.Second*30))
+	memoryStorage.Add(mc)
+
+	mainLoop := cl.New[*api.MainConfig](mainController, memoryStorage, cl.WithLogger(log.NewLogger()))
 	mainLoop.Run()
 	log.Info().Msg("Main", "Start run main loop")
 

@@ -24,20 +24,19 @@ type ControlLoop[T ResourceObject[T]] struct {
 	Queue       *Queue[T]
 }
 
-func New[T ResourceObject[T]](r Reconcile[T], options ...ClOption) (*ControlLoop[T], Storage[T]) {
+func New[T ResourceObject[T]](r Reconcile[T], storage *MemoryStorage[T], options ...ClOption) *ControlLoop[T] {
 	currentOptions := &opts{}
 	for _, o := range options {
 		o(currentOptions)
 	}
 	typedRateLimitingQueueConfig := workqueue.TypedRateLimitingQueueConfig[ObjectKey]{}
 	typedRateLimitingQueueConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ObjectKey]()
-	queue := NewQueue[T]()
 	controlLoop := &ControlLoop[T]{
 		r:           r,
 		stopChannel: make(chan struct{}),
 		exitChannel: make(chan struct{}),
-		Storage:     NewMemoryStorage[T](queue),
-		Queue:       queue,
+		Storage:     storage,
+		Queue:       storage.Queue,
 	}
 
 	if currentOptions.logger != nil {
@@ -56,7 +55,7 @@ func New[T ResourceObject[T]](r Reconcile[T], options ...ClOption) (*ControlLoop
 		controlLoop.storages = currentOptions.storages
 	}
 
-	return controlLoop, controlLoop.Storage
+	return controlLoop
 }
 
 func (cl *ControlLoop[T]) Run() {

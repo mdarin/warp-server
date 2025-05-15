@@ -12,10 +12,10 @@ type Queue[T ResourceObject[T]] struct {
 	m            *sync.RWMutex
 }
 
-func NewQueue[T ResourceObject[T]]() *Queue[T] {
+func NewQueue[T ResourceObject[T]](rateLimiter workqueue.TypedRateLimiter[ObjectKey]) *Queue[T] {
 	rateLimitingConfig := workqueue.TypedRateLimitingQueueConfig[ObjectKey]{}
 	rateLimitingConfig.DelayingQueue = workqueue.NewTypedDelayingQueue[ObjectKey]()
-	queue := workqueue.NewTypedRateLimitingQueueWithConfig[ObjectKey](workqueue.DefaultTypedControllerRateLimiter[ObjectKey](), rateLimitingConfig)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig[ObjectKey](rateLimiter, rateLimitingConfig)
 	return &Queue[T]{queue: queue, existedItems: make(map[ObjectKey]ResourceObject[T]), m: &sync.RWMutex{}}
 }
 
