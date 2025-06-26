@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"fmt"
+	"time"
 	"warp-server/pkg/log"
 )
 
@@ -18,6 +19,8 @@ func (s *Service) StartTunnel() error {
 		}
 		log.Info().Msg("Main", "Starting tunnel success!")
 	}
+
+	time.Sleep(3 * time.Second)
 
 	ok, err = s.sshTunnelRepository.CheckHealthTCP()
 	if err != nil {
