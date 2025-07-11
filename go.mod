@@ -8,7 +8,6 @@ require (
 	github.com/jroimartin/gocui v0.5.0
 	github.com/miekg/dns v1.1.65
 	github.com/rs/zerolog v1.34.0
-	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	golang.org/x/crypto v0.37.0
 	golang.org/x/net v0.35.0
 	gopkg.in/yaml.v2 v2.4.0
