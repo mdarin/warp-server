@@ -26,10 +26,10 @@ import (
 
 	"github.com/getlantern/systray"
 	"github.com/jroimartin/gocui"
+	"github.com/skratchdot/open-golang/open"
 )
 
 func main() {
-
 	currentUser, err := user.Current()
 	if err != nil {
 		panic(fmt.Sprintf("Cannot get current user: %v", err))
@@ -124,10 +124,14 @@ func main() {
 		systray.SetTitle("☑️")
 		systray.SetTooltip("warp-server")
 
+		mUrl := systray.AddMenuItem("Open UI", "Stats")
 		quitOrig := systray.AddMenuItem("Stop", "Stop the warp-server")
 
 		go func() {
 			select {
+			case <-mUrl.ClickedCh:
+				open.Run("http://localhost:28682")
+
 			case <-quitOrig.ClickedCh:
 				log.Info().Msg("Main", "Requesting quit...")
 				cancel()
