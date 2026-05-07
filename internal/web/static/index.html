@@ -41,19 +41,31 @@
       flex-shrink: 0;
     }
 
-    header h1 { font-size: 14px; color: var(--blue); }
+    header h1 {
+      font-size: 14px;
+      color: var(--blue);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
     #status-dot {
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--red);
       transition: background 0.3s;
     }
+
     #status-dot.connected { background: var(--green); }
 
-    .status-label { font-size: 11px; color: var(--subtext); margin-left: 6px; }
-
-    .status-row { display: flex; align-items: center; gap: 4px; }
+    .status-label {
+      font-size: 11px;
+      color: var(--subtext);
+    }
 
     main {
       flex: 1;
@@ -88,14 +100,20 @@
     }
 
     /* Conditions */
-    #conditions-panel { flex: 1; min-height: 0; }
+    #conditions-panel {
+      flex: 1;
+      min-height: 0;
+    }
+
+    #conditions-table-wrap {
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
 
     #conditions-table {
       width: 100%;
       border-collapse: collapse;
-      overflow-y: auto;
-      display: block;
-      height: 100%;
     }
 
     #conditions-table thead th {
@@ -107,6 +125,7 @@
       font-size: 11px;
       color: var(--subtext);
       border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
 
     #conditions-table tbody tr {
@@ -114,23 +133,25 @@
       transition: background 0.15s;
     }
 
-    #conditions-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    #conditions-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
 
     #conditions-table tbody td {
       padding: 5px 10px;
       vertical-align: top;
     }
 
-    .cond-type   { color: var(--blue); white-space: nowrap; }
-    .cond-reason { color: var(--yellow); white-space: nowrap; }
+    .cond-type    { color: var(--blue);   white-space: nowrap; }
+    .cond-reason  { color: var(--yellow); white-space: nowrap; }
     .cond-message { color: var(--subtext); word-break: break-word; }
 
-    .status-true  { color: var(--green); font-weight: bold; }
-    .status-false { color: var(--red); font-weight: bold; }
-    .status-unknown { color: var(--subtext); }
+    .status-true    { color: var(--green);   font-weight: bold; }
+    .status-false   { color: var(--red);     font-weight: bold; }
+    .status-unknown { color: var(--subtext);                    }
 
     /* Logs */
-    #logs-panel { height: 200px; flex-shrink: 0; }
+    #logs-panel { height: 220px; flex-shrink: 0; }
 
     #logs-container {
       overflow-y: auto;
@@ -139,14 +160,19 @@
     }
 
     #logs-output {
-      white-space: pre-wrap;
-      word-break: break-all;
       font-size: 12px;
       line-height: 1.6;
     }
 
-    .log-line { color: var(--text); }
-    .log-line:hover { background: rgba(255,255,255,0.03); }
+    .log-line {
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 1em;
+    }
+
+    .log-line:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
 
     .btn-clear {
       background: none;
@@ -158,7 +184,11 @@
       cursor: pointer;
       font-family: inherit;
     }
-    .btn-clear:hover { border-color: var(--blue); color: var(--blue); }
+
+    .btn-clear:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
 
     .empty-state {
       color: var(--subtext);
@@ -166,6 +196,11 @@
       padding: 10px;
       font-size: 12px;
     }
+
+    /* ANSI */
+    .ansi-bold      { font-weight: bold; }
+    .ansi-dim       { opacity: 0.6; }
+    .ansi-underline { text-decoration: underline; }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -185,28 +220,28 @@
 </header>
 
 <main>
-  <!-- Conditions -->
   <div class="panel" id="conditions-panel">
     <div class="panel-title">
       <span>Conditions</span>
-      <span id="conditions-count" style="color:var(--subtext);font-size:10px"></span>
+      <span id="conditions-count" style="color:var(--subtext);font-size:10px;font-weight:normal"></span>
     </div>
-    <table id="conditions-table">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Reason</th>
-          <th>Status</th>
-          <th style="width:100%">Message</th>
-        </tr>
-      </thead>
-      <tbody id="conditions-body">
-        <tr><td colspan="4" class="empty-state">Waiting for conditions...</td></tr>
-      </tbody>
-    </table>
+    <div id="conditions-table-wrap">
+      <table id="conditions-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th style="width:100%">Message</th>
+          </tr>
+        </thead>
+        <tbody id="conditions-body">
+          <tr><td colspan="4" class="empty-state">Waiting for conditions...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Logs -->
   <div class="panel" id="logs-panel">
     <div class="panel-title">
       <span>Logs</span>
@@ -219,117 +254,291 @@
 </main>
 
 <script>
-  const MAX_LOG_LINES = 1000;
-  let logLines = [];
-  let autoScroll = true;
-  let ws = null;
-  let reconnectDelay = 1000;
+// ─── ANSI 256-color palette ──────────────────────────────────────────────────
 
-  const statusDot   = document.getElementById('status-dot');
-  const statusLabel = document.getElementById('status-label');
-  const condBody    = document.getElementById('conditions-body');
-  const condCount   = document.getElementById('conditions-count');
-  const logsOutput  = document.getElementById('logs-output');
-  const logsContainer = document.getElementById('logs-container');
+function buildXterm256() {
+  const c = [];
 
-  // Следим за ручной прокруткой логов
-  logsContainer.addEventListener('scroll', () => {
-    const { scrollTop, scrollHeight, clientHeight } = logsContainer;
-    autoScroll = scrollHeight - scrollTop - clientHeight < 30;
-  });
+  // 0–15: системные цвета
+  const base16 = [
+    '#000000', '#800000', '#008000', '#808000',
+    '#000080', '#800080', '#008080', '#c0c0c0',
+    '#808080', '#ff0000', '#00ff00', '#ffff00',
+    '#0000ff', '#ff00ff', '#00ffff', '#ffffff',
+  ];
+  c.push(...base16);
 
-  function connect() {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${proto}://${location.host}/ws`);
-
-    ws.onopen = () => {
-      statusDot.classList.add('connected');
-      statusLabel.textContent = 'Connected';
-      reconnectDelay = 1000;
-    };
-
-    ws.onclose = () => {
-      statusDot.classList.remove('connected');
-      statusLabel.textContent = `Reconnecting in ${reconnectDelay / 1000}s...`;
-      setTimeout(connect, reconnectDelay);
-      reconnectDelay = Math.min(reconnectDelay * 2, 30000);
-    };
-
-    ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
-      ws.close();
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'log')       handleLog(msg.payload);
-        if (msg.type === 'condition') handleConditions(msg.payload);
-      } catch (e) {
-        console.error('Failed to parse message:', e);
+  // 16–231: 6×6×6 куб
+  for (let r = 0; r < 6; r++)
+    for (let g = 0; g < 6; g++)
+      for (let b = 0; b < 6; b++) {
+        const rv = r ? r * 40 + 55 : 0;
+        const gv = g ? g * 40 + 55 : 0;
+        const bv = b ? b * 40 + 55 : 0;
+        c.push(`rgb(${rv},${gv},${bv})`);
       }
-    };
+
+  // 232–255: оттенки серого
+  for (let i = 0; i < 24; i++) {
+    const v = i * 10 + 8;
+    c.push(`rgb(${v},${v},${v})`);
   }
 
-  function handleLog(text) {
-    logLines.push(text);
-    if (logLines.length > MAX_LOG_LINES) {
-      logLines = logLines.slice(logLines.length - MAX_LOG_LINES);
-    }
-    renderLogs();
-  }
+  return c;
+}
 
-  function renderLogs() {
-    logsOutput.innerHTML = logLines.map(line =>
-      `<div class="log-line">${escapeHtml(line)}</div>`
-    ).join('');
+const XTERM256 = buildXterm256();
 
-    if (autoScroll) {
-      logsContainer.scrollTop = logsContainer.scrollHeight;
-    }
-  }
+// ─── ANSI → HTML ─────────────────────────────────────────────────────────────
 
-  function handleConditions(conditions) {
-    condCount.textContent = `${conditions.length} item${conditions.length !== 1 ? 's' : ''}`;
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
-    if (!conditions.length) {
-      condBody.innerHTML = '<tr><td colspan="4" class="empty-state">No conditions</td></tr>';
+function ansiToHtml(raw) {
+  // ESC[...m — SGR, всё остальное — текст
+  const TOKEN_RE = /\x1b\[([0-9;]*)m|([^\x1b]+)/g;
+
+  let fg        = null;
+  let bg        = null;
+  let bold      = false;
+  let dim       = false;
+  let underline = false;
+
+  let html = '';
+
+  function flushText(text) {
+    if (!text) return;
+
+    const styles  = [];
+    const classes = [];
+
+    if (fg)        styles.push(`color:${fg}`);
+    if (bg)        styles.push(`background:${bg}`);
+    if (bold)      classes.push('ansi-bold');
+    if (dim)       classes.push('ansi-dim');
+    if (underline) classes.push('ansi-underline');
+
+    const escaped = escapeHtml(text);
+
+    if (!styles.length && !classes.length) {
+      html += escaped;
       return;
     }
 
-    condBody.innerHTML = conditions.map(c => `
-      <tr>
-        <td class="cond-type">${escapeHtml(c.type)}</td>
-        <td class="cond-reason">${escapeHtml(c.reason)}</td>
-        <td class="${statusClass(c.status)}">${escapeHtml(c.status)}</td>
-        <td class="cond-message">${escapeHtml(c.message)}</td>
-      </tr>
-    `).join('');
+    let tag = '<span';
+    if (classes.length) tag += ` class="${classes.join(' ')}"`;
+    if (styles.length)  tag += ` style="${styles.join(';')}"`;
+    tag += '>';
+    html += `${tag}${escaped}</span>`;
   }
 
-  function statusClass(status) {
-    switch (status) {
-      case 'True':    return 'status-true';
-      case 'False':   return 'status-false';
-      default:        return 'status-unknown';
+  function resetStyle() {
+    fg = null; bg = null;
+    bold = false; dim = false; underline = false;
+  }
+
+  let match;
+  while ((match = TOKEN_RE.exec(raw)) !== null) {
+    if (match[2] !== undefined) {
+      flushText(match[2]);
+      continue;
+    }
+
+    // SGR
+    const seq    = match[1];
+    const params = seq === '' ? [0] : seq.split(';').map(Number);
+    let i = 0;
+
+    while (i < params.length) {
+      const code = params[i];
+
+      if (code === 0) {
+        resetStyle();
+
+      } else if (code === 1) { bold = true;
+      } else if (code === 2) { dim  = true;
+      } else if (code === 4) { underline = true;
+      } else if (code === 22) { bold = false; dim = false;
+      } else if (code === 24) { underline = false;
+      } else if (code === 39) { fg = null;
+      } else if (code === 49) { bg = null;
+
+      // FG стандартные 30–37 и яркие 90–97
+      } else if (code >= 30 && code <= 37) {
+        fg = XTERM256[code - 30];
+      } else if (code >= 90 && code <= 97) {
+        fg = XTERM256[code - 90 + 8];
+
+      // BG стандартные 40–47 и яркие 100–107
+      } else if (code >= 40 && code <= 47) {
+        bg = XTERM256[code - 40];
+      } else if (code >= 100 && code <= 107) {
+        bg = XTERM256[code - 100 + 8];
+
+      // 256-color FG: ESC[38;5;Nm
+      } else if (code === 38 && params[i + 1] === 5 && params[i + 2] != null) {
+        fg = XTERM256[params[i + 2]] ?? null;
+        i += 2;
+
+      // 256-color BG: ESC[48;5;Nm
+      } else if (code === 48 && params[i + 1] === 5 && params[i + 2] != null) {
+        bg = XTERM256[params[i + 2]] ?? null;
+        i += 2;
+
+      // 24-bit FG: ESC[38;2;R;G;Bm
+      } else if (code === 38 && params[i + 1] === 2 && params[i + 4] != null) {
+        fg = `rgb(${params[i+2]},${params[i+3]},${params[i+4]})`;
+        i += 4;
+
+      // 24-bit BG: ESC[48;2;R;G;Bm
+      } else if (code === 48 && params[i + 1] === 2 && params[i + 4] != null) {
+        bg = `rgb(${params[i+2]},${params[i+3]},${params[i+4]})`;
+        i += 4;
+      }
+
+      i++;
     }
   }
 
-  function clearLogs() {
-    logLines = [];
-    logsOutput.innerHTML = '';
+  return html;
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
+const MAX_LOG_LINES   = 1000;
+let   logLines        = [];
+let   autoScroll      = true;
+let   ws              = null;
+let   reconnectDelay  = 1000;
+
+const statusDot     = document.getElementById('status-dot');
+const statusLabel   = document.getElementById('status-label');
+const condBody      = document.getElementById('conditions-body');
+const condCount     = document.getElementById('conditions-count');
+const logsOutput    = document.getElementById('logs-output');
+const logsContainer = document.getElementById('logs-container');
+
+logsContainer.addEventListener('scroll', () => {
+  const { scrollTop, scrollHeight, clientHeight } = logsContainer;
+  autoScroll = scrollHeight - scrollTop - clientHeight < 30;
+});
+
+// ─── WebSocket ───────────────────────────────────────────────────────────────
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+  ws.onopen = () => {
+    statusDot.classList.add('connected');
+    statusLabel.textContent = 'Connected';
+    reconnectDelay = 1000;
+  };
+
+  ws.onclose = () => {
+    statusDot.classList.remove('connected');
+    statusLabel.textContent = `Reconnecting in ${reconnectDelay / 1000}s...`;
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+  };
+
+  ws.onerror = (err) => {
+    console.error('WebSocket error:', err);
+    ws.close();
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'log')       handleLog(msg.payload);
+      if (msg.type === 'condition') handleConditions(msg.payload);
+    } catch (e) {
+      console.error('Failed to parse message:', e);
+    }
+  };
+}
+
+// ─── Logs ────────────────────────────────────────────────────────────────────
+
+function handleLog(text) {
+  // Сервер может прислать несколько строк в одном сообщении
+  const incoming = String(text).split(/\r?\n/);
+
+  for (let i = 0; i < incoming.length; i++) {
+    // Пропускаем пустую строку только если она последняя (trailing newline)
+    if (incoming[i] === '' && i === incoming.length - 1) continue;
+    logLines.push(incoming[i]);
   }
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  if (logLines.length > MAX_LOG_LINES) {
+    logLines = logLines.slice(logLines.length - MAX_LOG_LINES);
   }
 
-  connect();
+  renderLogs();
+}
+
+function renderLogs() {
+  const fragment = document.createDocumentFragment();
+
+  for (const line of logLines) {
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.innerHTML = ansiToHtml(line);
+    fragment.appendChild(div);
+  }
+
+  logsOutput.innerHTML = '';
+  logsOutput.appendChild(fragment);
+
+  if (autoScroll) {
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+  }
+}
+
+function clearLogs() {
+  logLines = [];
+  logsOutput.innerHTML = '';
+}
+
+// ─── Conditions ──────────────────────────────────────────────────────────────
+
+function handleConditions(conditions) {
+  condCount.textContent =
+    `${conditions.length} item${conditions.length !== 1 ? 's' : ''}`;
+
+  if (!conditions.length) {
+    condBody.innerHTML =
+      '<tr><td colspan="4" class="empty-state">No conditions</td></tr>';
+    return;
+  }
+
+  const rows = conditions.map(c => {
+    const cls = c.status === 'True'
+      ? 'status-true'
+      : c.status === 'False'
+        ? 'status-false'
+        : 'status-unknown';
+
+    return `<tr>
+      <td class="cond-type">${escapeHtml(c.type)}</td>
+      <td class="cond-reason">${escapeHtml(c.reason)}</td>
+      <td class="${cls}">${escapeHtml(c.status)}</td>
+      <td class="cond-message">${escapeHtml(c.message)}</td>
+    </tr>`;
+  });
+
+  condBody.innerHTML = rows.join('');
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+
+connect();
 </script>
 </body>
 </html>
