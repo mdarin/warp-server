@@ -3,8 +3,10 @@ module warp-server
 go 1.24.2
 
 require (
+	github.com/dominicletz/genserver v1.3.1
 	github.com/getlantern/systray v1.2.2
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/jroimartin/gocui v0.5.0
 	github.com/miekg/dns v1.1.65
 	github.com/rs/zerolog v1.34.0
@@ -32,6 +34,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
+	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect

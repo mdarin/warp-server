@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/getlantern/systray"
-	"github.com/jroimartin/gocui"
 	"os"
 	"os/signal"
 	"os/user"
@@ -22,8 +20,12 @@ import (
 	"warp-server/internal/services/tunnel"
 	"warp-server/internal/services/vpn"
 	"warp-server/internal/ui"
+	"warp-server/internal/web"
 	cl "warp-server/pkg/controlloop"
 	"warp-server/pkg/log"
+
+	"github.com/getlantern/systray"
+	"github.com/jroimartin/gocui"
 )
 
 func main() {
@@ -33,7 +35,7 @@ func main() {
 		panic(fmt.Sprintf("Cannot get current user: %v", err))
 	}
 	if currentUser.Gid == "0" || currentUser.Uid == "0" {
-		panic(fmt.Sprintf("Don't run from root"))
+		panic("Don't run from root")
 	}
 
 	l := &ui.LogWriter{Logs: make(chan string, 100)}
@@ -74,28 +76,31 @@ func main() {
 	memoryStorage.Add(mc)
 
 	mainLoop := cl.New[*api.MainConfig](mainController, memoryStorage, cl.WithLogger(log.NewLogger()))
-	mainLoop.Run()
-	log.Info().Msg("Main", "Start run main loop")
 
 	ctxExit, cancel := context.WithCancel(context.Background())
 
-	var g *gocui.Gui = nil
-
 	if !cfg.DaemonMode {
-		g, err = gocui.NewGui(gocui.Output256)
+		g, err := gocui.NewGui(gocui.Output256)
 		if err != nil {
 			panic(fmt.Errorf("Error loading gui: %s ", err))
 		}
+		defer g.Close()
+
 		go func() {
 			defer cancel()
 
-			err := ui.CreateTUI(cancel, g, l, conditionChannel)
-			if err != nil {
+			if err := ui.CreateTUI(cancel, g, l, conditionChannel); err != nil {
 				log.Error().Msgf("Main", "CreateTUI error: %s", err.Error())
 			}
 		}()
-		defer g.Close()
 	}
+
+	// Запускаем Web UI в отдельной горутине
+	go func() {
+		if err := web.CreateWebTUI(ctxExit, ":28682", l.Logs, conditionChannel); err != nil {
+			log.Error().Msgf("Main", "CreateWebTUI error: %s", err.Error())
+		}
+	}()
 
 	go func() {
 		defer cancel()
@@ -111,29 +116,34 @@ func main() {
 		mainLoop.Stop()
 		time.Sleep(time.Second * 1)
 		log.Info().Msg("Main", "warp-server stopped")
-
-		//g.Close()
 		time.Sleep(time.Second * 1)
 		log.Info().Msg("Main", "Application stopped")
 	}
 
 	onReady := func() {
 		systray.SetTitle("☑️")
-		systray.SetTooltip("Lantern")
-		mQuitOrig := systray.AddMenuItem("Stop", "Stop the WaRp/Server")
+		systray.SetTooltip("warp-server")
+
+		quitOrig := systray.AddMenuItem("Stop", "Stop the warp-server")
+
 		go func() {
 			select {
-			case <-mQuitOrig.ClickedCh:
+			case <-quitOrig.ClickedCh:
 				log.Info().Msg("Main", "Requesting quit...")
+				cancel()
 				systray.Quit()
 				log.Info().Msg("Main", "Finished quitting")
 
 			case <-ctxExit.Done():
 				log.Info().Msg("Main", "Requesting quit...")
+				cancel()
 				systray.Quit()
 				log.Info().Msg("Main", "Finished quitting")
 			}
 		}()
+
+		mainLoop.Run()
+		log.Info().Msg("Main", "Start run main loop")
 	}
 
 	systray.Run(onReady, onExit)

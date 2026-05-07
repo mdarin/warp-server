@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00B4FF"/>
+      <stop offset="100%" stop-color="#7F00FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Щит -->
+  <path d="M256 100 L320 150 L320 350 L256 400 L192 350 L192 150 Z" fill="url(#grad1)" stroke="#000" stroke-width="8"/>
+
+  <!-- Шестерёнка внутри щита -->
+  <circle cx="256" cy="250" r="40" fill="#fff" opacity="0.9"/>
+  <g transform="translate(256,250)">
+    <circle r="20" fill="#000"/>
+    <path d="M-10,-10 L-5,-15 L5,-15 L10,-10 L10,10 L5,15 L-5,15 L-10,10 Z" fill="#fff"/>
+    <circle r="5" fill="#000"/>
+  </g>
+
+  <!-- Стрелка вниз (вместо множества стрелок) -->
+  <path d="M256 400 L256 450 M256 450 L240 435 M256 450 L272 435" stroke="url(#grad1)" stroke-width="12" stroke-linecap="round" fill="none"/>
+
+  <!-- Облако (опционально — можно убрать для трей-иконки) -->
+  <path d="M256 50 C200 50 160 80 160 120 C160 140 180 160 200 160 C220 160 240 140 240 120 C240 100 260 80 280 80 C300 80 320 100 320 120 C320 160 360 180 400 160 C440 140 440 100 400 80 C360 60 300 50 256 50 Z" 
+        fill="none" stroke="url(#grad1)" stroke-width="10" opacity="0.7"/>
+
+</svg>

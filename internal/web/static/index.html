@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Service Monitor</title>
+  <style>
+    :root {
+      --bg: #1e1e2e;
+      --surface: #181825;
+      --border: #313244;
+      --text: #cdd6f4;
+      --subtext: #a6adc8;
+      --green: #a6e3a1;
+      --yellow: #f9e2af;
+      --red: #f38ba8;
+      --blue: #89b4fa;
+      --mauve: #cba6f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    header h1 { font-size: 14px; color: var(--blue); }
+
+    #status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      transition: background 0.3s;
+    }
+    #status-dot.connected { background: var(--green); }
+
+    .status-label { font-size: 11px; color: var(--subtext); margin-left: 6px; }
+
+    .status-row { display: flex; align-items: center; gap: 4px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--subtext);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Conditions */
+    #conditions-panel { flex: 1; min-height: 0; }
+
+    #conditions-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow-y: auto;
+      display: block;
+      height: 100%;
+    }
+
+    #conditions-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      padding: 4px 10px;
+      text-align: left;
+      font-size: 11px;
+      color: var(--subtext);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #conditions-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    #conditions-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    #conditions-table tbody td {
+      padding: 5px 10px;
+      vertical-align: top;
+    }
+
+    .cond-type   { color: var(--blue); white-space: nowrap; }
+    .cond-reason { color: var(--yellow); white-space: nowrap; }
+    .cond-message { color: var(--subtext); word-break: break-word; }
+
+    .status-true  { color: var(--green); font-weight: bold; }
+    .status-false { color: var(--red); font-weight: bold; }
+    .status-unknown { color: var(--subtext); }
+
+    /* Logs */
+    #logs-panel { height: 200px; flex-shrink: 0; }
+
+    #logs-container {
+      overflow-y: auto;
+      flex: 1;
+      padding: 6px 10px;
+    }
+
+    #logs-output {
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-line { color: var(--text); }
+    .log-line:hover { background: rgba(255,255,255,0.03); }
+
+    .btn-clear {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--subtext);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-clear:hover { border-color: var(--blue); color: var(--blue); }
+
+    .empty-state {
+      color: var(--subtext);
+      font-style: italic;
+      padding: 10px;
+      font-size: 12px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #45475a; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ Service Monitor</h1>
+  <div class="status-row">
+    <div id="status-dot"></div>
+    <span class="status-label" id="status-label">Disconnected</span>
+  </div>
+</header>
+
+<main>
+  <!-- Conditions -->
+  <div class="panel" id="conditions-panel">
+    <div class="panel-title">
+      <span>Conditions</span>
+      <span id="conditions-count" style="color:var(--subtext);font-size:10px"></span>
+    </div>
+    <table id="conditions-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th style="width:100%">Message</th>
+        </tr>
+      </thead>
+      <tbody id="conditions-body">
+        <tr><td colspan="4" class="empty-state">Waiting for conditions...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Logs -->
+  <div class="panel" id="logs-panel">
+    <div class="panel-title">
+      <span>Logs</span>
+      <button class="btn-clear" onclick="clearLogs()">Clear</button>
+    </div>
+    <div id="logs-container">
+      <div id="logs-output"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const MAX_LOG_LINES = 1000;
+  let logLines = [];
+  let autoScroll = true;
+  let ws = null;
+  let reconnectDelay = 1000;
+
+  const statusDot   = document.getElementById('status-dot');
+  const statusLabel = document.getElementById('status-label');
+  const condBody    = document.getElementById('conditions-body');
+  const condCount   = document.getElementById('conditions-count');
+  const logsOutput  = document.getElementById('logs-output');
+  const logsContainer = document.getElementById('logs-container');
+
+  // Следим за ручной прокруткой логов
+  logsContainer.addEventListener('scroll', () => {
+    const { scrollTop, scrollHeight, clientHeight } = logsContainer;
+    autoScroll = scrollHeight - scrollTop - clientHeight < 30;
+  });
+
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+    ws.onopen = () => {
+      statusDot.classList.add('connected');
+      statusLabel.textContent = 'Connected';
+      reconnectDelay = 1000;
+    };
+
+    ws.onclose = () => {
+      statusDot.classList.remove('connected');
+      statusLabel.textContent = `Reconnecting in ${reconnectDelay / 1000}s...`;
+      setTimeout(connect, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+    };
+
+    ws.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      ws.close();
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'log')       handleLog(msg.payload);
+        if (msg.type === 'condition') handleConditions(msg.payload);
+      } catch (e) {
+        console.error('Failed to parse message:', e);
+      }
+    };
+  }
+
+  function handleLog(text) {
+    logLines.push(text);
+    if (logLines.length > MAX_LOG_LINES) {
+      logLines = logLines.slice(logLines.length - MAX_LOG_LINES);
+    }
+    renderLogs();
+  }
+
+  function renderLogs() {
+    logsOutput.innerHTML = logLines.map(line =>
+      `<div class="log-line">${escapeHtml(line)}</div>`
+    ).join('');
+
+    if (autoScroll) {
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+  }
+
+  function handleConditions(conditions) {
+    condCount.textContent = `${conditions.length} item${conditions.length !== 1 ? 's' : ''}`;
+
+    if (!conditions.length) {
+      condBody.innerHTML = '<tr><td colspan="4" class="empty-state">No conditions</td></tr>';
+      return;
+    }
+
+    condBody.innerHTML = conditions.map(c => `
+      <tr>
+        <td class="cond-type">${escapeHtml(c.type)}</td>
+        <td class="cond-reason">${escapeHtml(c.reason)}</td>
+        <td class="${statusClass(c.status)}">${escapeHtml(c.status)}</td>
+        <td class="cond-message">${escapeHtml(c.message)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function statusClass(status) {
+    switch (status) {
+      case 'True':    return 'status-true';
+      case 'False':   return 'status-false';
+      default:        return 'status-unknown';
+    }
+  }
+
+  function clearLogs() {
+    logLines = [];
+    logsOutput.innerHTML = '';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  connect();
+</script>
+</body>
+</html>

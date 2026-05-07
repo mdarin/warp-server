@@ -11,6 +11,8 @@ import (
 	"warp-server/internal/services/vpn"
 	cl "warp-server/pkg/controlloop"
 	"warp-server/pkg/log"
+
+	"github.com/getlantern/systray"
 )
 
 func NewMainReconcile(
@@ -55,19 +57,25 @@ func (r *MainReconcile) reconcileNormal(ctx context.Context, mc *api.MainConfig)
 	vpnState, _, err := r.vpnService.GetState()
 	if err != nil {
 		mc.MarkFalse(api.VPNConnectedCondition, api.VPNConnectionStateFailedReason, err.Error())
+
 		return cl.Result{}, err
 	}
+
 	if vpnState != dto.VPNStateConnected {
 		log.Info().Msg("Main", "Connecting to VPN...")
+		systray.SetTooltip("Connecting to VPN...")
 		err = r.vpnService.Connect()
 		if err != nil {
 			mc.MarkFalse(api.VPNConnectedCondition, api.VPNConnectionFailedReason, err.Error())
+
 			return cl.Result{}, err
 		}
 		log.Info().Msg("Main", "Connecting to VPN success!")
+
 		return cl.Result{RequeueAfter: time.Second}, nil
 	}
 	mc.MarkTrue(api.VPNConnectedCondition)
+
 	if r.cfg.VpnOnly {
 		// imitate success condition
 		mc.MarkTrue(api.PFDisabledCondition)
@@ -76,25 +84,32 @@ func (r *MainReconcile) reconcileNormal(ctx context.Context, mc *api.MainConfig)
 
 		return cl.Result{RequeueAfter: time.Second * 20}, nil
 	}
+
 	err = r.fwService.Disable()
 	if err != nil {
 		mc.MarkFalse(api.PFDisabledCondition, api.PFDisabledFailedReason, err.Error())
+
 		return cl.Result{}, err
 	}
 	mc.MarkTrue(api.PFDisabledCondition)
+
 	err = r.tunnelService.SetupSSHKey()
 	if err != nil {
 		mc.MarkFalse(api.SSHKeysInstalledCondition, api.SSHKeysFailedReason, err.Error())
+
 		return cl.Result{}, err
 	}
 	mc.MarkTrue(api.SSHKeysInstalledCondition)
+
 	err = r.tunnelService.StartTunnel()
 	if err != nil {
 		log.Info().Err(err)
 		mc.MarkFalse(api.TunnelEnabledCondition, api.TunnelInitializationFailedReason, err.Error())
+
 		return cl.Result{}, err
 	}
 	mc.MarkTrue(api.TunnelEnabledCondition)
+
 	return cl.Result{RequeueAfter: time.Second * 20}, nil
 }
 

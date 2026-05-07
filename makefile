@@ -1,16 +1,17 @@
 build-darwin-arm64:
 	@echo "Building for darwin/arm64..."
-	@start_time=$$(date +%s)
-	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 GO111MODULE=on go build -a -o warp-server cmd/app/*
-	echo  "\033[1;32mBuild succeeded in $$(($$(date +%s) - start_time)) seconds\033[0m"
-	chmod +x warp-server
+# 	@start_time=$$(date +%s)
+# 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 GO111MODULE=on go build -a -o warp-server cmd/app/*
+# 	@echo  "\033[1;32mBuild succeeded in $$(($$(date +%s) - start_time)) seconds\033[0m"
+# 	chmod +x warp-server
+	@./make_bin.sh
 
 build:
 	go build -o warp-server cmd/app/*
 	chmod +x warp-server
 
 plist: agent # Создаем .plist-файл
-	./make_plist.sh
+	@./make_plist.sh
 	mv application.ru.server.warp.daemon.plist $(HOME)/Library/LaunchAgents/application.ru.server.warp.daemon.plist
 
 agent: build-darwin-arm64 # Помещаем исполняемый файл в каталог из перечня поиска PATH TODO: можно переменить
@@ -25,6 +26,11 @@ start-daemon: # Запуск вручную
 
 stop-daemon: # Остановка
 	launchctl stop application.ru.server.warp.daemon
+
+restart-daemon: # Перезапуск демона
+	launchctl stop application.ru.server.warp.daemon
+	launchctl start application.ru.server.warp.daemon
+
 
 unload-daemon:  # Перезагрузка демона
 	-launchctl remove application.ru.server.warp.daemon
