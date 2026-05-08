@@ -3,6 +3,7 @@ module warp-server
 go 1.24.2
 
 require (
+	github.com/briandowns/spinner v1.23.2
 	github.com/dominicletz/genserver v1.3.1
 	github.com/getlantern/systray v1.2.2
 	github.com/go-playground/validator/v10 v10.26.0
@@ -18,6 +19,7 @@ require (
 )
 
 require (
+	github.com/fatih/color v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/getlantern/context v0.0.0-20190109183933-c447772a6520 // indirect
 	github.com/getlantern/errors v0.0.0-20190325191628-abdb3e3e36f7 // indirect
@@ -39,6 +41,7 @@ require (
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect

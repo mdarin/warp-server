@@ -12,6 +12,7 @@ import (
 	cl "warp-server/pkg/controlloop"
 	"warp-server/pkg/log"
 
+	"github.com/briandowns/spinner"
 	"github.com/getlantern/systray"
 )
 
@@ -21,6 +22,7 @@ func NewMainReconcile(
 	vpnService *vpn.Service,
 	fwService *fw.Service,
 	tunnelService *tunnel.Service,
+	s *spinner.Spinner,
 ) *MainReconcile {
 	return &MainReconcile{
 		cfg:            cfg,
@@ -28,6 +30,7 @@ func NewMainReconcile(
 		vpnService:     vpnService,
 		fwService:      fwService,
 		tunnelService:  tunnelService,
+		spinner:        s,
 	}
 }
 
@@ -37,20 +40,21 @@ type MainReconcile struct {
 	vpnService     *vpn.Service
 	fwService      *fw.Service
 	tunnelService  *tunnel.Service
+	spinner        *spinner.Spinner
 }
 
 func (r *MainReconcile) Reconcile(ctx context.Context, object *api.MainConfig) (cl.Result, error) {
-	config := object // TODO: rename? Variable 'config' collides with imported package name
+	c := object
 
 	defer func() {
-		r.conditionsChan <- config.GetConditions()
+		r.conditionsChan <- c.GetConditions()
 	}()
 
-	if config.GetKillTimestamp() != "" {
-		return r.reconcileKill(ctx, config)
+	if c.GetKillTimestamp() != "" {
+		return r.reconcileKill(ctx, c)
 	}
 
-	return r.reconcileNormal(ctx, config)
+	return r.reconcileNormal(ctx, c)
 }
 
 func (r *MainReconcile) reconcileNormal(ctx context.Context, mc *api.MainConfig) (cl.Result, error) {
@@ -63,7 +67,8 @@ func (r *MainReconcile) reconcileNormal(ctx context.Context, mc *api.MainConfig)
 
 	if vpnState != dto.VPNStateConnected {
 		log.Info().Msg("Main", "Connecting to VPN...")
-		systray.SetTooltip("Connecting to VPN...")
+		systray.SetTooltip("Connecting to VPN...") // todo animation ♺ ♳ ♴ ♵ ♶ ♷ ♸ ♹.  ♼ ♽
+
 		err = r.vpnService.Connect()
 		if err != nil {
 			mc.MarkFalse(api.VPNConnectedCondition, api.VPNConnectionFailedReason, err.Error())
@@ -74,7 +79,10 @@ func (r *MainReconcile) reconcileNormal(ctx context.Context, mc *api.MainConfig)
 
 		return cl.Result{RequeueAfter: time.Second}, nil
 	}
+	// r.spinner.Stop()
+	// systray.SetTitle("☭")
 	mc.MarkTrue(api.VPNConnectedCondition)
+	log.Info().Msg("Main", "State connenected. On line!")
 
 	if r.cfg.VpnOnly {
 		// imitate success condition

@@ -22,8 +22,10 @@ import (
 	"warp-server/internal/ui"
 	"warp-server/internal/web"
 	cl "warp-server/pkg/controlloop"
+	"warp-server/pkg/icon"
 	"warp-server/pkg/log"
 
+	"github.com/briandowns/spinner"
 	"github.com/getlantern/systray"
 	"github.com/jroimartin/gocui"
 	"github.com/skratchdot/open-golang/open"
@@ -44,6 +46,9 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("Error loading config: %s ", err))
 	}
+
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond, spinner.WithWriter(l))
+	// s.Start()
 
 	newResource := cl.NewResource("newResource")
 	mc := &api.MainConfig{
@@ -70,6 +75,7 @@ func main() {
 		vpnService,
 		fwService,
 		tunnelService,
+		s,
 	)
 
 	memoryStorage := cl.NewMemoryStorage[*api.MainConfig](cl.WithCustomRateLimits(time.Second*3, time.Second*30))
@@ -121,7 +127,8 @@ func main() {
 	}
 
 	onReady := func() {
-		systray.SetTitle("☑️")
+		// systray.SetTitle("*")
+		systray.SetTemplateIcon(icon.Data, icon.Data)
 		systray.SetTooltip("warp-server")
 
 		mUrl := systray.AddMenuItem("Open UI", "Stats")

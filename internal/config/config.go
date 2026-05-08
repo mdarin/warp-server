@@ -1,10 +1,11 @@
 package config
 
 import (
+	"os"
+
 	"github.com/go-playground/validator/v10"
 	_ "github.com/go-playground/validator/v10"
 	yaml "gopkg.in/yaml.v2"
-	"os"
 )
 
 type Config struct {
@@ -26,7 +27,7 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
-	cfg := &Config{}
+	cfg := new(Config)
 
 	if err := yaml.Unmarshal(file, &cfg); err != nil {
 		return nil, err

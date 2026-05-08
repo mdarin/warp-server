@@ -2,7 +2,10 @@ package tray
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
+	"unicode/utf8"
 	"warp-server/pkg/log"
 
 	"github.com/dominicletz/genserver"
@@ -101,4 +104,50 @@ func (x *SystemTrayAgent) Start(onReady func(), onExit func()) {
 	x.gen.Shutdown(5 * time.Second)
 
 	log.Info().Msg("Main", "Stopped goroutine")
+}
+
+// Использование
+//
+// Копировать код
+// w := NewTrayWriter()
+
+// Напрямую
+// w.Write([]byte("A"))
+
+// Через fmt
+// fmt.Fprint(w, "★")
+
+// Через bufio и т.д.
+// buf := bufio.NewWriter(w)
+// buf.WriteString("⚡")
+// buf.Flush()
+
+// TrayWriter реализует io.Writer, отображая последний записанный символ в трее
+type TrayWriter struct {
+	mu sync.Mutex
+}
+
+// Write реализует интерфейс io.Writer
+// Берёт первый UTF-8 символ из переданных данных и устанавливает его как заголовок трея
+func (w *TrayWriter) Write(p []byte) (n int, err error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	r, size := utf8.DecodeRune(p)
+	if r == utf8.RuneError && size <= 1 {
+		return 0, fmt.Errorf("tray writer: invalid utf-8 rune")
+	}
+
+	systray.SetTitle(string(r))
+
+	return len(p), nil
+}
+
+// NewTrayWriter создаёт новый TrayWriter
+func NewTrayWriter() *TrayWriter {
+	return &TrayWriter{}
 }
